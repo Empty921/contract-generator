@@ -136,6 +136,14 @@ button:hover{
             </div>
 
         @endforeach
+        <div class="form-group">
+            <label>Формат результата</label>
+
+            <select name="output_format">
+                <option value="docx">DOCX</option>
+                <option value="pdf">PDF</option>
+            </select>
+        </div>
 
         <button type="submit">
             Скачать документ

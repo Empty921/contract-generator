@@ -20,3 +20,6 @@ Route::get('/templates/{id}', [TemplateController::class, 'show'])
 
 Route::post('/templates/{id}/generate', [TemplateController::class, 'generate'])
     ->name('templates.generate');
+
+Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])
+    ->name('templates.destroy');

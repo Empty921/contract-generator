@@ -63,6 +63,7 @@
 
         .topbar h1 {
             color: #8b5cf6;
+            font-size: 26px;
         }
 
         /* Контент */
@@ -78,10 +79,12 @@
             border: 1px solid #ddd;
             border-radius: 12px;
             padding: 25px;
+            font-size: 18px;
         }
 
         .upload-card h2 {
             margin-bottom: 20px;
+            font-size: 26px;
         }
 
         .upload-card input[type="file"] {
@@ -115,6 +118,63 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
+
+            position: relative;
+            overflow: hidden;
+
+            transition:
+                transform .12s ease,
+                opacity .12s ease;
+        }
+
+        .btn:hover {
+            opacity: .95;
+        }
+
+        .btn:active {
+            transform: scale(.94);
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+
+            left: 50%;
+            top: 50%;
+
+            width: 0;
+            height: 0;
+
+            border-radius: 50%;
+
+            background: rgba(
+                255,
+                255,
+                255,
+                0.45
+            );
+
+            transform:
+                translate(-50%, -50%);
+        }
+
+        .btn:active::after {
+            animation: ripple .4s ease;
+        }
+
+        @keyframes ripple {
+
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                width: 300px;
+                height: 300px;
+                opacity: 0;
+            }
         }
 
         .btn:hover {

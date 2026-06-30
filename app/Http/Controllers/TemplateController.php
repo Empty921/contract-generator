@@ -290,4 +290,29 @@ class TemplateController extends Controller
                 ]);
         }
     }
+    public function destroy($id)
+    {
+        $template = Template::findOrFail($id);
+
+        TemplateVariable::where(
+            'template_id',
+            $template->id
+        )->delete();
+
+        if (
+            $template->file_path &&
+            Storage::exists($template->file_path)
+        ) {
+            Storage::delete($template->file_path);
+        }
+
+        $template->delete();
+
+        return redirect()
+            ->route('dashboard')
+            ->with(
+                'success',
+                'Шаблон удалён.'
+            );
+    }
 }
