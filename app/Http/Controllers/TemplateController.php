@@ -15,6 +15,7 @@ class TemplateController extends Controller
     {
         return view('templates.create');
     }
+
     public function dashboard()
     {
         $templates = Template::with('variables')
@@ -26,14 +27,17 @@ class TemplateController extends Controller
 
     public function index()
     {
-        $templates = Template::with('variables')->latest()->get();
+        $templates = Template::with('variables')
+            ->latest()
+            ->get();
 
         return view('templates.index', compact('templates'));
     }
 
     public function show($id)
     {
-        $template = Template::with('variables')->findOrFail($id);
+        $template = Template::with('variables')
+            ->findOrFail($id);
 
         return view('templates.show', compact('template'));
     }
@@ -41,7 +45,7 @@ class TemplateController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
+            'name' => 'required|string|max:255',
             'template_file' => 'required|file|mimes:docx,pdf'
         ]);
 
@@ -52,9 +56,9 @@ class TemplateController extends Controller
         );
 
         $template = Template::create([
-            'name' => $request->name,
+            'name'      => $request->name,
             'file_path' => $path,
-            'format' => $extension
+            'format'    => $extension
         ]);
 
         try {
@@ -67,16 +71,27 @@ class TemplateController extends Controller
 
                 $zip = new \ZipArchive();
 
-                if ($zip->open($fullPath) === true) {
+                if ($zip->open($fullPath) !== true) {
 
-                    $xml = $zip->getFromName('word/document.xml');
-
-                    $zip->close();
-
-                    $text = strip_tags($xml);
+                    throw new \Exception(
+                        'Не удалось открыть DOCX файл.'
+                    );
                 }
 
-            } elseif ($extension === 'pdf') {
+                $xml = $zip->getFromName('word/document.xml');
+
+                $zip->close();
+
+                if (!$xml) {
+                    throw new \Exception(
+                        'Не удалось прочитать document.xml.'
+                    );
+                }
+
+                $text = strip_tags($xml);
+            }
+
+            if ($extension === 'pdf') {
 
                 $parser = new Parser();
 
@@ -90,85 +105,189 @@ class TemplateController extends Controller
                 $template->delete();
 
                 return back()->withErrors([
-                    'template_file' => 'Не удалось прочитать содержимое файла.'
+                    'template_file' =>
+                        'Не удалось получить текст из документа.'
                 ]);
             }
 
-            preg_match_all('/\$\{(.*?)\}/', $text, $matches);
+            preg_match_all(
+                '/\$\{([^}]+)\}/',
+                $text,
+                $matches
+            );
 
-            $variables = array_unique($matches[1]);
+            $variables = [];
+
+            if (isset($matches[1])) {
+
+                foreach ($matches[1] as $item) {
+
+                    $item = trim($item);
+
+                    if ($item !== '') {
+                        $variables[] = $item;
+                    }
+                }
+            }
+
+            $variables = array_unique($variables);
 
             if (count($variables) === 0) {
 
                 $template->delete();
 
                 return back()->withErrors([
-                    'template_file' => 'В шаблоне не найдено ни одной переменной вида {{name}}.'
+                    'template_file' =>
+                        'В документе не найдено переменных вида ${variable}.'
                 ]);
             }
 
             foreach ($variables as $variable) {
-
-                $variable = trim($variable);
-
-                if ($variable === '') {
-
-                    $template->delete();
-
-                    return back()->withErrors([
-                        'template_file' => 'Обнаружена пустая переменная {{}}.'
-                    ]);
-                }
-
                 TemplateVariable::create([
-                    'template_id' => $template->id,
+                    'template_id'   => $template->id,
                     'variable_name' => $variable
                 ]);
             }
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
 
             $template->delete();
 
             return back()->withErrors([
-                'template_file' => 'Ошибка обработки файла: ' . $e->getMessage()
+                'template_file' =>
+                    'Ошибка обработки файла: ' .
+                    $e->getMessage()
             ]);
         }
 
-        return redirect()->route('templates.index')
-            ->with('success', 'Шаблон успешно загружен');
+        return redirect()
+            ->route('templates.show', $template->id)
+            ->with(
+                'success',
+                'Шаблон успешно загружен.'
+            );
     }
+
     public function generate(Request $request, $id)
     {
-        $template = Template::with('variables')->findOrFail($id);
+        $template = Template::with('variables')
+            ->findOrFail($id);
 
         if ($template->format !== 'docx') {
 
             return back()->withErrors([
-                'error' => 'Генерация пока поддерживается только для DOCX.'
+                'error' =>
+                    'Генерация поддерживается только для DOCX.'
             ]);
         }
 
-        $sourcePath = Storage::path($template->file_path);
+        try {
 
-        $processor = new TemplateProcessor($sourcePath);
+            foreach ($template->variables as $variable) {
 
-        foreach ($template->variables as $variable) {
+                $value = trim(
+                    (string) $request->input(
+                        $variable->variable_name
+                    )
+                );
 
-            $value = $request->input($variable->variable_name);
+                if ($value === '') {
 
-            $processor->setValue(
-                $variable->variable_name,
-                $value
+                    return back()
+                        ->withInput()
+                        ->withErrors([
+                            $variable->variable_name =>
+                                'Поле "' .
+                                $variable->variable_name .
+                                '" не заполнено.'
+                        ]);
+                }
+            }
+
+            $sourcePath = Storage::path(
+                $template->file_path
             );
+
+            if (!file_exists($sourcePath)) {
+
+                return back()->withErrors([
+                    'error' =>
+                        'Файл шаблона не найден.'
+                ]);
+            }
+
+            $processor = new TemplateProcessor(
+                $sourcePath
+            );
+
+            foreach ($template->variables as $variable) {
+
+                $value = trim(
+                    (string) $request->input(
+                        $variable->variable_name
+                    )
+                );
+
+                $processor->setValue(
+                    $variable->variable_name,
+                    htmlspecialchars(
+                        $value,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    )
+                );
+            }
+
+            $generatedDir = storage_path(
+                'app/generated'
+            );
+
+            if (!file_exists($generatedDir)) {
+
+                mkdir(
+                    $generatedDir,
+                    0777,
+                    true
+                );
+            }
+
+            $fileName =
+                'generated_' .
+                date('Ymd_His') .
+                '_' .
+                uniqid() .
+                '.docx';
+
+            $savePath =
+                $generatedDir .
+                DIRECTORY_SEPARATOR .
+                $fileName;
+
+            $processor->saveAs($savePath);
+
+            if (!file_exists($savePath)) {
+
+                throw new \Exception(
+                    'Файл не был создан.'
+                );
+            }
+
+            return response()
+                ->download(
+                    $savePath,
+                    $fileName
+                )
+                ->deleteFileAfterSend(true);
+
+        } catch (\Throwable $e) {
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'error' =>
+                        'Ошибка генерации: ' .
+                        $e->getMessage()
+                ]);
         }
-
-        $fileName = 'generated_' . time() . '.docx';
-
-        $savePath = storage_path('app/' . $fileName);
-
-        $processor->saveAs($savePath);
-
-        return response()->download($savePath)->deleteFileAfterSend(true);
     }
 }
