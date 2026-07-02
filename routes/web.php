@@ -23,3 +23,9 @@ Route::post('/templates/{id}/generate', [TemplateController::class, 'generate'])
 
 Route::delete('/templates/{id}', [TemplateController::class, 'destroy'])
     ->name('templates.destroy');
+
+Route::get('/documents/{document}/preview', [TemplateController::class, 'previewDocument'])
+    ->name('documents.preview');
+
+Route::get('/documents/{document}/download', [TemplateController::class, 'downloadDocument'])
+    ->name('documents.download');

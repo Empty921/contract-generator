@@ -8,6 +8,7 @@ class TemplateVariable extends Model
 {
     protected $fillable = [
         'template_id',
-        'variable_name'
+        'variable_name',
+        'max_length'
     ];
 }

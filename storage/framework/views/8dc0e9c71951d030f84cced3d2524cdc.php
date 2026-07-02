@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $template->name }}</title>
+    <title><?php echo e($template->name); ?></title>
 
     <style>
         .btn {
@@ -141,55 +141,48 @@
 
 <div class="card">
 
-    <a href="{{ route('dashboard') }}" class="back">
+    <a href="<?php echo e(route('dashboard')); ?>" class="back">
         ← Назад
     </a>
 
-    <h1>{{ $template->name }}</h1>
+    <h1><?php echo e($template->name); ?></h1>
 
     <p class="subtitle">
         Заполните данные для генерации документа
     </p>
 
-    @if($errors->any())
+    <?php if($errors->any()): ?>
         <div class="error">
-            @foreach($errors->all() as $error)
-                <div>{{ $error }}</div>
-            @endforeach
+            <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <div><?php echo e($error); ?></div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
-    @endif
+    <?php endif; ?>
 
-    <form method="POST" action="{{ route('templates.generate', $template->id) }}">
-        @csrf
+    <form method="POST" action="<?php echo e(route('templates.generate', $template->id)); ?>">
+        <?php echo csrf_field(); ?>
 
-        @foreach($template->variables as $variable)
+        <?php $__currentLoopData = $template->variables; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $variable): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
             <div class="form-group">
                 <label>
-                    {{ $variable->variable_name }}
+                    <?php echo e($variable->variable_name); ?>
+
                 </label>
                 <input
                     type="text"
-                    name="{{ $variable->variable_name }}"
-                    value="{{ old($variable->variable_name) }}"
+                    name="<?php echo e($variable->variable_name); ?>"
+                    value="<?php echo e(old($variable->variable_name)); ?>"
                     required
                 >
             </div>
-        @endforeach
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
         <div class="form-group">
             <label>Формат результата</label>
             <select name="output_format">
-                @if($template->format === 'docx')
-                    <option value="docx" selected>DOCX</option>
-                @else
-                    <option value="pdf" selected disabled>PDF недоступен для генерации</option>
-                @endif
+                <option value="docx" <?php echo e(old('output_format', 'docx') == 'docx' ? 'selected' : ''); ?>>DOCX</option>
+                <option value="pdf" <?php echo e(old('output_format') == 'pdf' ? 'selected' : ''); ?>>PDF</option>
             </select>
-            @if($template->format === 'docx')
-                <small>PDF-экспорт из DOCX отключён без полноценного конвертера, чтобы не создавать документ с искажённой вёрсткой.</small>
-            @else
-                <small>PDF-шаблоны сейчас доступны только для извлечения переменных. Генерация отключена, чтобы не ломать исходный вид PDF.</small>
-            @endif
         </div>
 
         <button type="submit">
@@ -198,12 +191,12 @@
     </form>
 
     <div class="preview-box">
-        <p><strong>Тип шаблона:</strong> {{ strtoupper($template->format) }}</p>
-        <p><strong>Переменных:</strong> {{ count($template->variables) }}</p>
-        <p><small>Пример заполнения: <code>${{ $template->variables->first()->variable_name ?? '...' }}</code></small></p>
+        <p><strong>Тип шаблона:</strong> <?php echo e(strtoupper($template->format)); ?></p>
+        <p><strong>Переменных:</strong> <?php echo e(count($template->variables)); ?></p>
+        <p><small>Пример заполнения: <code>$<?php echo e($template->variables->first()->variable_name ?? '...'); ?></code></small></p>
     </div>
 
 </div>
 
 </body>
-</html>
+</html><?php /**PATH D:\Practika\contract-generator\resources\views/templates/show.blade.php ENDPATH**/ ?>

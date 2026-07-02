@@ -12,7 +12,9 @@
         "laravel/tinker": "^3.0",
         "mpdf/mpdf": "^8.3",
         "phpoffice/phpword": "^1.1",
-        "smalot/pdfparser": "^2.12"
+        "setasign/fpdi": "^2.6",
+        "smalot/pdfparser": "^2.12",
+        "tecnickcom/tcpdf": "^7.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -84,7 +86,8 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
-        }
+        },
+        "policy.advisories.block": false
     },
     "minimum-stability": "stable",
     "prefer-stable": true

@@ -8,13 +8,9 @@
     <style>
         /* Кнопки с эффектом нажатия */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            display: inline-block;
             padding: 10px 16px;
-            min-height: 40px;
             font-size: 14px;
-            line-height: 1;
             font-weight: bold;
             color: white;
             background: #6366f1;
@@ -24,20 +20,6 @@
             transition: transform 0.1s ease, background 0.2s ease;
             position: relative;
             overflow: hidden;
-            text-decoration: none;
-            vertical-align: middle;
-        }
-
-        .actions-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .actions-row form {
-            display: flex;
-            margin: 0;
         }
 
         .btn:hover {
@@ -393,24 +375,22 @@
                     <input type="text" id="templateSearch" placeholder="Поиск шаблона..." onkeyup="filterTemplates()">
                 </div>
 
-                @forelse($templates as $template)
+                <?php $__empty_1 = true; $__currentLoopData = $templates; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $template): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <div class="template-card template-item">
-                        <h3>{{ $template->name }}</h3>
-                        <p>Формат: {{ strtoupper($template->format) }}</p>
-                        <p>Переменных: {{ $template->variables()->count() }}</p>
-                        <div class="actions-row">
-                            <a href="{{ route('templates.show', $template) }}" class="btn">Заполнить</a>
-                            <button class="btn btn-preview" onclick='openTemplatePreview(@json($template->variables->pluck("variable_name")->values()), @json(asset("storage/" . $template->file_path)), @json($template->format))'>Предпросмотр шаблона</button>
-                            <form action="{{ route('templates.destroy', $template) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить шаблон «{{ $template->name }}»?');">Удалить</button>
-                            </form>
-                        </div>
+                        <h3><?php echo e($template->name); ?></h3>
+                        <p>Формат: <?php echo e(strtoupper($template->format)); ?></p>
+                        <p>Переменных: <?php echo e($template->variables()->count()); ?></p>
+                        <a href="<?php echo e(route('templates.show', $template)); ?>" class="btn">Заполнить</a>
+                        <button class="btn btn-preview" onclick='openTemplatePreview(<?php echo json_encode($template->variables->pluck("variable_name")->values(), 15, 512) ?>, <?php echo json_encode(asset("storage/" . $template->file_path), 15, 512) ?>, <?php echo json_encode($template->format, 15, 512) ?>)'>Предпросмотр шаблона</button>
+                        <form action="<?php echo e(route('templates.destroy', $template)); ?>" method="POST" style="display:inline-block;">
+                            <?php echo csrf_field(); ?>
+                            <?php echo method_field('DELETE'); ?>
+                            <button type="submit" class="btn btn-delete" onclick="return confirm('Удалить шаблон «<?php echo e($template->name); ?>»?');">Удалить</button>
+                        </form>
                     </div>
-                @empty
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <p>Шаблонов пока нет.</p>
-                @endforelse
+                <?php endif; ?>
             </div>
 
             <!-- Раздел: Загрузка -->
@@ -418,16 +398,16 @@
                 <div class="upload-card">
                     <h2>Загрузка нового шаблона</h2>
 
-                    @if($errors->any())
+                    <?php if($errors->any()): ?>
                         <div class="error">
-                            @foreach($errors->all() as $error)
-                                <div>{{ $error }}</div>
-                            @endforeach
+                            <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <div><?php echo e($error); ?></div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                    @endif
+                    <?php endif; ?>
 
-                    <form action="{{ route('templates.store') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
+                    <form action="<?php echo e(route('templates.store')); ?>" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_field(); ?>
 
                         <div style="margin-bottom:15px">
                             <label>Название шаблона</label><br>
@@ -448,30 +428,28 @@
             <div id="history-section" class="hidden">
                 <h2 style="color:#8b5cf6; margin-bottom:20px;">История сгенерированных документов</h2>
                 
-                @if($generatedDocuments->isEmpty())
+                <?php if($generatedDocuments->isEmpty()): ?>
                     <p>История пуста.</p>
-                @else
-                    @foreach($generatedDocuments as $document)
+                <?php else: ?>
+                    <?php $__currentLoopData = $generatedDocuments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $document): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                         <div class="history-card">
-                            <h3>{{ $document->template->name ?? 'Удаленный шаблон' }}</h3>
-                            <p><strong>Дата:</strong> {{ $document->created_at->format('d.m.Y H:i') }}</p>
-                            <p><strong>Формат:</strong> {{ strtoupper($document->output_format) }}</p>
+                            <h3><?php echo e($document->template->name ?? 'Удаленный шаблон'); ?></h3>
+                            <p><strong>Дата:</strong> <?php echo e($document->created_at->format('d.m.Y H:i')); ?></p>
+                            <p><strong>Формат:</strong> <?php echo e(strtoupper($document->output_format)); ?></p>
                             <div class="variables-list">
                                 <strong>Переменные:</strong>
                                 <ul>
-                                    @php $variables = is_array($document->variables_json) ? $document->variables_json : (json_decode($document->variables_json, true) ?: []); @endphp
-                                    @foreach($variables as $name => $value)
-                                        <li><strong>${{ $name }}:</strong> {{ $value }}</li>
-                                    @endforeach
+                                    <?php $variables = is_array($document->variables_json) ? $document->variables_json : (json_decode($document->variables_json, true) ?: []); ?>
+                                    <?php $__currentLoopData = $variables; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $name => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <li><strong>$<?php echo e($name); ?>:</strong> <?php echo e($value); ?></li>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </ul>
                             </div>
-                            <div class="actions-row">
-                                <button class="btn btn-preview" onclick="openPreview('{{ route('documents.preview', $document) }}', '{{ $document->output_format }}')">Предпросмотр</button>
-                                <a href="{{ route('documents.download', $document) }}" class="btn" style="background:#3b82f6">Скачать</a>
-                            </div>
+                            <button class="btn btn-preview" onclick="openPreview('<?php echo e(route('documents.preview', $document)); ?>', '<?php echo e($document->output_format); ?>')">Предпросмотр</button>
+                            <a href="<?php echo e(route('documents.download', $document)); ?>" class="btn" style="background:#3b82f6">Скачать</a>
                         </div>
-                    @endforeach
-                @endif
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php endif; ?>
             </div>
 
         </div>
@@ -551,3 +529,4 @@
 
 </body>
 </html>
+<?php /**PATH D:\Practika\contract-generator\resources\views/dashboard.blade.php ENDPATH**/ ?>

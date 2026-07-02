@@ -11,17 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('template_variables', function (Blueprint $table) {
+        Schema::create('generated_documents', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('template_id')
-                  ->constrained()
-                  ->onDelete('cascade');
-
-            $table->string('variable_name');
-
-            $table->unsignedTinyInteger('max_length')->nullable();
-
+            $table->foreignId('template_id')->constrained()->onDelete('cascade');
+            $table->string('output_format');
+            $table->string('file_path');
+            $table->json('variables_json')->nullable();
             $table->timestamps();
         });
     }
@@ -31,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('template_variables');
+        Schema::dropIfExists('generated_documents');
     }
 };

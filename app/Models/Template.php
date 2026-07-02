@@ -15,4 +15,9 @@ class Template extends Model
     {
         return $this->hasMany(TemplateVariable::class);
     }
+
+    public function generatedDocuments()
+    {
+        return $this->hasMany(GeneratedDocument::class);
+    }
 }
